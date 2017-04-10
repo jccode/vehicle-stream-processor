@@ -1,6 +1,7 @@
 package com.suyun.vehicle.processor;
 
 import com.suyun.common.kafka.JsonSerializer;
+import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.VehiclePartsCodes;
 import com.suyun.vehicle.model.VehicleData;
 import org.apache.kafka.common.serialization.Serdes;
@@ -28,7 +29,6 @@ import java.util.Optional;
 @Component
 public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
-    private final static String TOPIC_OUT = "vehicle_online_offline";
     private final static String ONLINE_OFFLINE_STORE = "vehicle_online_offline_store";
     private final static Logger LOGGER = LoggerFactory.getLogger(OnlineOfflineProcessor.class);
 
@@ -113,7 +113,7 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
         }, ONLINE_OFFLINE_STORE)
 
-        .to(TOPIC_OUT);
+        .to(Topics.ONLINE_OFFLINE);
 
     }
 

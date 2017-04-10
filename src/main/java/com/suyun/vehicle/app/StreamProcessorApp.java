@@ -1,5 +1,6 @@
 package com.suyun.vehicle.app;
 
+import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.processor.OnlineOfflineProcessor;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
@@ -30,8 +31,6 @@ public class StreamProcessorApp {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(StreamProcessorApp.class);
 
-    private String TOPIC_VEHICLE_DATA = "vehicle_data";
-
     @Autowired
     private StreamsConfig streamsConfig;
 
@@ -57,7 +56,7 @@ public class StreamProcessorApp {
     private void startStreamProcessing() {
         KStreamBuilder builder = new KStreamBuilder();
 
-        KStream<String, byte[]> stream = builder.stream(TOPIC_VEHICLE_DATA);
+        KStream<String, byte[]> stream = builder.stream(Topics.VEHICLE_DATA);
         processor.process(stream, builder);
 
         /*
