@@ -31,6 +31,9 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
     private final static String ONLINE_OFFLINE_STORE = "vehicle_online_offline_store";
     private final static Logger LOGGER = LoggerFactory.getLogger(OnlineOfflineProcessor.class);
+    private final static int ONLINE = 1;
+    private final static int OFFLINE = 2;
+
 
     public void process(KStream<String, byte[]> stream, KStreamBuilder builder) {
 
@@ -43,18 +46,25 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
         builder.addStateStore(store);
 
         stream.filter((key, value) -> {
-            List<VehicleData> vehicleData = deserialize(value);
-            // 国标: 根据"车辆状态"来获取
-            Optional<VehicleData> vehStatus = getVehStatus(vehicleData);
+            List<VehicleData> vehicleDatas = deserialize(value);
+            // 国标: 根据"车辆状态"来获取 / 部标: 根据"ACC状态"来取
+            Optional<VehicleData> vehStatus = getVehStatus(vehicleDatas);
             if (vehStatus.isPresent()) {
-                double status = vehStatus.get().getValue();
-                // 只过滤出 "启动"/"熄火"　状态的数据
-                if (status == 0x01 || status == 0x02) {
+                VehicleData vehicleData = vehStatus.get();
+                String metricCode = vehicleData.getMetricCode();
+
+                if (metricCode.equals(VehiclePartsCodes.BUS_ACC_STATUS)) { //部标
                     return true;
+
+                } else if (metricCode.equals(VehiclePartsCodes.GB_VEH_STATUS)) { //国标
+                    double status = vehicleData.getValue();
+                    // 只过滤出 "启动"/"熄火"　状态的数据
+                    if (status == 0x01 || status == 0x02) {
+                        return true;
+                    }
                 }
             }
 
-            // TODO: 部标: 要根据什么来获取?
             return false;
         })
 
@@ -62,7 +72,14 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
             List<VehicleData> vehicleDatas = deserialize(value);
             VehicleData vehStatus = getVehStatus(vehicleDatas).get();
-            return new KeyValue<>(vehStatus.getVehicleId(), vehStatus.getValue().intValue());
+            int status = vehStatus.getValue().intValue();
+            int out;
+            if (vehStatus.getMetricCode().equals(VehiclePartsCodes.GB_VEH_STATUS)) { //国标
+                out = status == 0x01 ? ONLINE : OFFLINE;
+            } else { //部标
+                out = status == 1 ? ONLINE : OFFLINE;
+            }
+            return new KeyValue<>(vehStatus.getVehicleId(), out);
         })
 
         .transform(() -> new Transformer<String, Integer, KeyValue<String, byte[]>>() {
@@ -118,6 +135,6 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
     }
 
     private Optional<VehicleData> getVehStatus(List<VehicleData> vehicleData) {
-        return findByCode(vehicleData, VehiclePartsCodes.GB_VEH_STATUS);
+        return findByCodes(vehicleData, VehiclePartsCodes.GB_VEH_STATUS, VehiclePartsCodes.BUS_ACC_STATUS);
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.suyun.common.kafka.JsonSerializer;
 import com.suyun.vehicle.model.VehicleData;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,5 +24,9 @@ public class VehicleDataProcessor {
 
     protected Optional<VehicleData> findByCode(List<VehicleData> list, String code) {
         return list.stream().filter(d -> d.getMetricCode().equals(code)).findFirst();
+    }
+
+    protected Optional<VehicleData> findByCodes(List<VehicleData> list, String ...codes) {
+        return list.stream().filter(d -> Arrays.stream(codes).anyMatch(code -> code.equals(d.getMetricCode()))).findFirst();
     }
 }
