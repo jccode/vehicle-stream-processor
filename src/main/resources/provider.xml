@@ -7,11 +7,13 @@
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
        http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
 
+    <context:property-placeholder location="classpath:app.properties" />
+
     <!-- 提供方应用信息，用于计算依赖关系 -->
     <dubbo:application name="vehicle-stream-processor"  />
 
     <!-- 使用multicast广播注册中心暴露服务地址 -->
-    <dubbo:registry address="zookeeper://10.0.0.200:2181" />
+    <dubbo:registry protocol="zookeeper" address="${zookeeper.url}" />
 
     <!-- 用dubbo协议在20880端口暴露服务 -->
     <dubbo:protocol name="dubbo" port="20880" />

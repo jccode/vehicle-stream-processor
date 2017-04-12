@@ -10,6 +10,7 @@ import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +22,15 @@ import java.util.List;
  */
 public class VehicleStreamServiceImpl implements VehicleStreamService {
 
+    @Autowired
     private KafkaStreams streams;
+
     private Logger LOGGER = LoggerFactory.getLogger(VehicleStreamServiceImpl.class);
 
 
-    public VehicleStreamServiceImpl(KafkaStreams streams) {
-        this.streams = streams;
-    }
+//    public VehicleStreamServiceImpl(KafkaStreams streams) {
+//        this.streams = streams;
+//    }
 
     public VehicleStreamServiceImpl() {
     }

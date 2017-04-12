@@ -49,14 +49,17 @@ public class StreamProcessorApp {
         startStreamProcessing();
     }
 
+    @Bean
+    public KafkaStreams createStream() {
+        KStreamBuilder builder = new KStreamBuilder();
+        KStream<String, byte[]> stream = builder.stream(Topics.VEHICLE_DATA);
+        processor.process(stream, builder);
+        KafkaStreams streams = new KafkaStreams(builder, streamsConfig);
+        return streams;
+    }
 
 
     private void startStreamProcessing() {
-        KStreamBuilder builder = new KStreamBuilder();
-
-        KStream<String, byte[]> stream = builder.stream(Topics.VEHICLE_DATA);
-        processor.process(stream, builder);
-
 
         /*
         stream.filter((key, value) -> deserialize((byte[]) value).length() > 5).mapValues(value -> {
@@ -73,12 +76,8 @@ public class StreamProcessorApp {
         }).through("test_out2");
         */
 
-
-        KafkaStreams streams = new KafkaStreams(builder, streamsConfig);
+        KafkaStreams streams = createStream();
         streams.start();
-
-        new VehicleStreamServiceImpl(streams);
-
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 
