@@ -2,6 +2,7 @@ package com.suyun.vehicle.app;
 
 import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.processor.OnlineOfflineProcessor;
+import com.suyun.vehicle.service.impl.VehicleStreamServiceImpl;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
@@ -10,10 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.*;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -27,6 +25,7 @@ import java.io.IOException;
 @Configuration
 @ComponentScan({"com.suyun.vehicle", "com.suyun.common"})
 @PropertySource("classpath:app.properties")
+@ImportResource("classpath:provider.xml")
 public class StreamProcessorApp {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(StreamProcessorApp.class);
@@ -52,12 +51,12 @@ public class StreamProcessorApp {
 
 
 
-
     private void startStreamProcessing() {
         KStreamBuilder builder = new KStreamBuilder();
 
         KStream<String, byte[]> stream = builder.stream(Topics.VEHICLE_DATA);
         processor.process(stream, builder);
+
 
         /*
         stream.filter((key, value) -> deserialize((byte[]) value).length() > 5).mapValues(value -> {
@@ -66,7 +65,6 @@ public class StreamProcessorApp {
             //return value;
             return ("R" + deserialize + deserialize.length()).getBytes();
         }).through(topicOut);
-
 
         stream.mapValues(value -> {
             String deserialize = deserialize((byte[]) value);
@@ -78,6 +76,9 @@ public class StreamProcessorApp {
 
         KafkaStreams streams = new KafkaStreams(builder, streamsConfig);
         streams.start();
+
+        new VehicleStreamServiceImpl(streams);
+
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 

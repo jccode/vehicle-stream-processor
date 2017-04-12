@@ -29,7 +29,7 @@ import java.util.Optional;
 @Component
 public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
-    private final static String ONLINE_OFFLINE_STORE = "vehicle_online_offline_store";
+    public final static String ONLINE_OFFLINE_STORE = "vehicle_online_offline_store";
     private final static Logger LOGGER = LoggerFactory.getLogger(OnlineOfflineProcessor.class);
     private final static int ONLINE = 1;
     private final static int OFFLINE = 2;
