@@ -11,8 +11,10 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -20,17 +22,13 @@ import java.util.List;
  *
  * Created by IT on 2017/4/11.
  */
+@Service("vehicleStreamService")
 public class VehicleStreamServiceImpl implements VehicleStreamService {
 
     @Autowired
     private KafkaStreams streams;
 
     private Logger LOGGER = LoggerFactory.getLogger(VehicleStreamServiceImpl.class);
-
-
-//    public VehicleStreamServiceImpl(KafkaStreams streams) {
-//        this.streams = streams;
-//    }
 
     public VehicleStreamServiceImpl() {
     }
@@ -42,8 +40,11 @@ public class VehicleStreamServiceImpl implements VehicleStreamService {
         KeyValueIterator<String, Integer> iter = onlineOfflineStore.all();
         while (iter.hasNext()) {
             KeyValue<String, Integer> item = iter.next();
-            LOGGER.info(item.key + ": "+item.value);
             result.add(new AccDTO(item.key, item.value));
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Vehicle acc status: ");
+            LOGGER.debug(result.toString());
         }
         return result;
     }

@@ -2,7 +2,6 @@ package com.suyun.vehicle.app;
 
 import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.processor.OnlineOfflineProcessor;
-import com.suyun.vehicle.service.impl.VehicleStreamServiceImpl;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
@@ -24,7 +23,6 @@ import java.io.IOException;
 @Component
 @Configuration
 @ComponentScan({"com.suyun.vehicle", "com.suyun.common"})
-@PropertySource("classpath:app.properties")
 @ImportResource("classpath:provider.xml")
 public class StreamProcessorApp {
 
