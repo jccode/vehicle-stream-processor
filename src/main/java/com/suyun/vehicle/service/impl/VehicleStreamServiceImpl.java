@@ -1,5 +1,6 @@
 package com.suyun.vehicle.service.impl;
 
+import com.suyun.common.lang.Tuple2;
 import com.suyun.vehicle.api.dto.AccDTO;
 import com.suyun.vehicle.api.services.VehicleStreamService;
 import com.suyun.vehicle.processor.OnlineOfflineProcessor;
@@ -36,11 +37,12 @@ public class VehicleStreamServiceImpl implements VehicleStreamService {
     @Override
     public List<AccDTO> findVehicleAccStatus() {
         List<AccDTO> result = new ArrayList<>();
-        ReadOnlyKeyValueStore<String, Integer> onlineOfflineStore = streams.store(OnlineOfflineProcessor.ONLINE_OFFLINE_STORE, QueryableStoreTypes.<String, Integer>keyValueStore());
-        KeyValueIterator<String, Integer> iter = onlineOfflineStore.all();
+        ReadOnlyKeyValueStore<String, byte[]> onlineOfflineStore = streams.store(OnlineOfflineProcessor.ONLINE_OFFLINE_STORE, QueryableStoreTypes.<String, byte[]>keyValueStore());
+        KeyValueIterator<String, byte[]> iter = onlineOfflineStore.all();
         while (iter.hasNext()) {
-            KeyValue<String, Integer> item = iter.next();
-            result.add(new AccDTO(item.key, item.value));
+            KeyValue<String, byte[]> item = iter.next();
+            AccDTO value = OnlineOfflineProcessor.deserilizeStoreValue(item.value);
+            result.add(value);
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Vehicle acc status: ");

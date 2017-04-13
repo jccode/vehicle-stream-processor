@@ -1,8 +1,12 @@
 package com.suyun.vehicle.processor;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.suyun.common.kafka.JsonSerializer;
+import com.suyun.common.lang.Tuple;
+import com.suyun.common.lang.Tuple2;
 import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.VehiclePartsCodes;
+import com.suyun.vehicle.api.dto.AccDTO;
 import com.suyun.vehicle.model.VehicleData;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -39,7 +43,7 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
         StateStoreSupplier store = Stores.create(ONLINE_OFFLINE_STORE)
                 .withKeys(Serdes.String())
-                .withValues(Serdes.Integer())
+                .withValues(Serdes.ByteArray())
                 .persistent()
                 .build();
 
@@ -79,40 +83,44 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
             } else { //部标
                 out = status == 1 ? ONLINE : OFFLINE;
             }
-            return new KeyValue<>(vehStatus.getVehicleId(), out);
+
+            AccDTO result = new AccDTO(vehStatus.getVehicleId(), out, vehStatus.getTimestamp());
+            return new KeyValue<>(vehStatus.getVehicleId(), result);
         })
 
-        .transform(() -> new Transformer<String, Integer, KeyValue<String, byte[]>>() {
+        .transform(() -> new Transformer<String, AccDTO, KeyValue<String, byte[]>>() {
             private ProcessorContext context;
-            private KeyValueStore<String, Integer> state;
+            private KeyValueStore<String, byte[]> state;
 
             @Override
             public void init(ProcessorContext context) {
                 this.context = context;
-                this.state = (KeyValueStore<String, Integer>) context.getStateStore(ONLINE_OFFLINE_STORE);
+                this.state = (KeyValueStore<String, byte[]>) context.getStateStore(ONLINE_OFFLINE_STORE);
                 context.schedule(1000);  // call #punctuate() each 1000ms
             }
 
             @Override
-            public KeyValue<String, byte[]> transform(String key, Integer value) {
-                Integer currState = this.state.get(key);
+            public KeyValue<String, byte[]> transform(String key, AccDTO value) {
+                AccDTO currState = null;
+                try {
+                    currState = deserilizeStoreValue(this.state.get(key));
+                } catch (Exception e) {
+                    LOGGER.info("deserialize exception" + e);
+                }
 
-                if (LOGGER.isDebugEnabled()) {
+                if (LOGGER.isDebugEnabled() && currState != null) {
                     LOGGER.debug("Vehicle: " + key + " status is "+currState);
                 }
 
-                this.state.put(key, value);
+                this.state.put(key, JsonSerializer.serialize(value));
 
-                if (value.equals(currState)) {
-
+                if (currState!= null && value.getAccStatus() == currState.getAccStatus()) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Vehicle status not changed");
                     }
-
                     return null;
                 }
                 else {
-//                    return new KeyValue<>(key, value);
                     return new KeyValue<>(key, JsonSerializer.serialize(value));
                 }
             }
@@ -137,4 +145,9 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
     private Optional<VehicleData> getVehStatus(List<VehicleData> vehicleData) {
         return findByCodes(vehicleData, VehiclePartsCodes.GB_VEH_STATUS, VehiclePartsCodes.BUS_ACC_STATUS);
     }
+
+    public static AccDTO deserilizeStoreValue(byte[] bytes) {
+        return JsonSerializer.deserialize(bytes, AccDTO.class);
+    }
+
 }
