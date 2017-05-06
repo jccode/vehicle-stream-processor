@@ -9,6 +9,7 @@ import org.apache.kafka.streams.kstream.KStreamBuilder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Vehicle data processor
@@ -30,6 +31,10 @@ public abstract class VehicleDataProcessor {
 
     protected Optional<VehicleData> findByCodes(List<VehicleData> list, String ...codes) {
         return list.stream().filter(d -> Arrays.stream(codes).anyMatch(code -> code.equals(d.getMetricCode()))).findFirst();
+    }
+
+    Stream<VehicleData> filterByCodes(List<VehicleData> list, String ...codes) {
+        return list.stream().filter(d -> Arrays.stream(codes).anyMatch(code -> code.equals(d.getMetricCode())));
     }
 
     public abstract void process(KStream<String, byte[]> stream, KStreamBuilder builder);

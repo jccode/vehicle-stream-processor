@@ -8,16 +8,20 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KStreamBuilder;
+import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.internals.WindowedDeserializer;
 import org.apache.kafka.streams.kstream.internals.WindowedSerializer;
-import org.apache.kafka.streams.processor.StateStoreSupplier;
-import org.apache.kafka.streams.state.Stores;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 统计处理器
@@ -40,9 +44,50 @@ public class StatisticsProcessor extends VehicleDataProcessor {
 
 
 
+
+    @SuppressWarnings("unchecked")
     @Override
     public void process(KStream<String, byte[]> stream, KStreamBuilder builder) {
 
+        
+        stream
+                .flatMap((key, value) -> {
+                    List<VehicleData> vehicleDatas = deserialize(value);
+                    Stream<KeyValue<String, Double>> keyValueStream = vehicleDatas.stream()
+                            .filter(v ->
+                                    Arrays.stream(interestCodes()).anyMatch(code ->
+                                            code.equals(v.getMetricCode())))
+                            .map(v -> new KeyValue(v.getVehicleId() + ":" + v.getMetricCode(), v.getValue()));
+                    return keyValueStream.collect(Collectors.toList());
+                })
+
+                .groupByKey(stringSerde, Serdes.Double())
+
+                .aggregate(
+                        () -> 0.0,
+                        (key, value, aggregate) -> {
+                            LOGGER.info("[statics processor] agg: " + aggregate);
+                            return (value + aggregate);
+                        },
+                        TimeWindows.of(WINDOW_SIZE), // tumbling windows
+                        Serdes.Double(),
+                        STAT_STORE
+                )
+
+                .mapValues(JsonSerializer::serialize)
+
+                .to(windowedSerde, Serdes.ByteArray(), TOPIC);
+
+
+//        DEBUG
+//                .map((key, value) -> {
+//                    LOGGER.info("[StatisticsProcessor]" + key + ": " + value);
+//                    return new KeyValue<>(key, JsonSerializer.serialize(value));
+//                })
+//                .to(stringSerde, Serdes.ByteArray(), TOPIC);
+
+
+        /*
         stream
                 .filter((key, value) -> {
                     LOGGER.info("[StatisticsProcessor] ");
@@ -77,10 +122,20 @@ public class StatisticsProcessor extends VehicleDataProcessor {
                 })
 
                 .to(windowedSerde, Serdes.ByteArray(), TOPIC);
+                */
 
     }
 
-    public Optional<VehicleData> getSocData(List<VehicleData> vehicleDataList) {
+    private Optional<VehicleData> getSocData(List<VehicleData> vehicleDataList) {
         return findByCodes(vehicleDataList, VehiclePartsCodes.GB_VEH_SOC, VehiclePartsCodes.BMS_SOC);
+    }
+
+    private String[] interestCodes() {
+        return new String[] {
+                VehiclePartsCodes.BMS_SOC,
+                VehiclePartsCodes.GB_VEH_SOC,
+                VehiclePartsCodes.BUS_TOTAL_MILEAGE,
+                VehiclePartsCodes.GB_VEH_TOTAL_MILEAGE
+        };
     }
 }
