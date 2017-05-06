@@ -1,9 +1,6 @@
 package com.suyun.vehicle.processor;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.suyun.common.kafka.JsonSerializer;
-import com.suyun.common.lang.Tuple;
-import com.suyun.common.lang.Tuple2;
 import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.VehiclePartsCodes;
 import com.suyun.vehicle.api.dto.AccDTO;
@@ -19,7 +16,6 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +26,6 @@ import java.util.Optional;
  *
  * Created by IT on 2017/4/7.
  */
-@Component
 public class OnlineOfflineProcessor extends VehicleDataProcessor {
 
     public final static String ONLINE_OFFLINE_STORE = "vehicle_online_offline_store";
@@ -38,7 +33,7 @@ public class OnlineOfflineProcessor extends VehicleDataProcessor {
     private final static int ONLINE = 1;
     private final static int OFFLINE = 2;
 
-
+    @Override
     public void process(KStream<String, byte[]> stream, KStreamBuilder builder) {
 
         StateStoreSupplier store = Stores.create(ONLINE_OFFLINE_STORE)

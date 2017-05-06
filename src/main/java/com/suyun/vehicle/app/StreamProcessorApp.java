@@ -2,6 +2,7 @@ package com.suyun.vehicle.app;
 
 import com.suyun.vehicle.Topics;
 import com.suyun.vehicle.processor.OnlineOfflineProcessor;
+import com.suyun.vehicle.processor.StatisticsProcessor;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
@@ -31,8 +32,14 @@ public class StreamProcessorApp {
     @Autowired
     private StreamsConfig streamsConfig;
 
+//    @Autowired
+//    private OnlineOfflineProcessor processor;
+
+//    @Autowired
+//    private StatisticsProcessor statisticsProcessor;
+
     @Autowired
-    private OnlineOfflineProcessor processor;
+    private ProcessorRegistry registry;
 
     public static void main(String[] args) throws IOException {
         ApplicationContext context = new AnnotationConfigApplicationContext(StreamProcessorApp.class);
@@ -51,7 +58,9 @@ public class StreamProcessorApp {
     public KafkaStreams createStream() {
         KStreamBuilder builder = new KStreamBuilder();
         KStream<String, byte[]> stream = builder.stream(Topics.VEHICLE_DATA);
-        processor.process(stream, builder);
+        registry.getProcessors().forEach(processor -> {
+            processor.process(stream, builder);
+        });
         KafkaStreams streams = new KafkaStreams(builder, streamsConfig);
         return streams;
     }
