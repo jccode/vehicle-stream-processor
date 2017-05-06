@@ -49,7 +49,7 @@ public class StatisticsProcessor extends VehicleDataProcessor {
     @Override
     public void process(KStream<String, byte[]> stream, KStreamBuilder builder) {
 
-        
+        // 统计多个值.
         stream
                 .flatMap((key, value) -> {
                     List<VehicleData> vehicleDatas = deserialize(value);
@@ -88,6 +88,7 @@ public class StatisticsProcessor extends VehicleDataProcessor {
 
 
         /*
+        // 只统计单个值.
         stream
                 .filter((key, value) -> {
                     LOGGER.info("[StatisticsProcessor] ");
